@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, csv, re, shutil, tempfile, logging, subprocess
+import os, csv, re, shutil, tempfile, logging
 from pathlib import Path
 
 import anthropic
@@ -11,7 +11,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,47 +25,10 @@ log = logging.getLogger(__name__)
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# ─── フォント登録 ───
-def find_japanese_font():
-    # fc-listで全フォントパスを取得して日本語対応を探す
-    try:
-        result = subprocess.run(
-            ["fc-list", ":lang=ja", "--format=%{file}\n"],
-            capture_output=True, text=True, timeout=10
-        )
-        for line in result.stdout.strip().split("\n"):
-            p = line.strip()
-            if p and os.path.exists(p):
-                log.info(f"フォント発見: {p}")
-                return p
-    except Exception as e:
-        log.warning(f"fc-list失敗: {e}")
-
-    # 固定パス候補
-    for p in [
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/opentype/noto/NotoSansCJKjp-Regular.otf",
-        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/noto-cjk/NotoSansCJKjp-Regular.otf",
-        "C:/Windows/Fonts/msgothic.ttc",
-        "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
-    ]:
-        if os.path.exists(p):
-            return p
-    return None
-
-def register_font():
-    p = find_japanese_font()
-    if p:
-        try:
-            pdfmetrics.registerFont(TTFont("JapaneseFont", p))
-            log.info(f"フォント登録: {p}")
-            return "JapaneseFont", p
-        except Exception as e:
-            log.error(f"フォント登録失敗: {e}")
-    return "Helvetica", None
-
-FONT_NAME, FONT_PATH = register_font()
+# ─── 日本語フォント（ReportLab内蔵CIDフォント）───
+FONT_NAME = "HeiseiKakuGo-W5"
+pdfmetrics.registerFont(UnicodeCIDFont(FONT_NAME))
+log.info(f"フォント登録: {FONT_NAME}")
 
 # ─── 用語辞書 ───
 def load_glossary():
@@ -82,8 +45,7 @@ def load_glossary():
 GLOSSARY = load_glossary()
 
 def apply_glossary(text, glossary):
-    placeholders = {}
-    idx = 0
+    placeholders, idx = {}, 0
     for term in sorted(glossary.keys(), key=len, reverse=True):
         pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
         if pattern.search(text):
@@ -168,7 +130,7 @@ def translate_pdf(input_path, output_path, direction):
                     scale = 180/w_mm
                     story.append(RLImage(str(img_path), width=180*mm, height=h_mm*scale*mm))
                     if raw.strip():
-                        story.append(Spacer(1,4*mm))
+                        story.append(Spacer(1, 4*mm))
                         story.append(Paragraph("【翻訳テキスト】", sC))
                         pre, ph = apply_glossary(raw, glossary)
                         trans = claude_translate(pre, direction)
@@ -196,10 +158,10 @@ def translate_pdf(input_path, output_path, direction):
 
 # ─── エンドポイント ───
 @app.get("/")
-def root(): return {"status":"ok","font":FONT_NAME,"font_path":FONT_PATH}
+def root(): return {"status":"ok","font":FONT_NAME}
 
 @app.get("/health")
-def health(): return {"status":"healthy","font_name":FONT_NAME,"font_path":FONT_PATH}
+def health(): return {"status":"healthy","font_name":FONT_NAME}
 
 @app.post("/translate")
 async def translate(file: UploadFile = File(...), direction: str = Form("en_to_ja")):
