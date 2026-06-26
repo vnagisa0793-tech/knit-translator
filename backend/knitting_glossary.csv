@@ -1,0 +1,73 @@
+﻿english,japanese,notes
+knit,表編み,
+purl,裏編み,
+knitting,編み物,
+knit stitch,表編み,
+purl stitch,裏編み,
+k,表編み,knit（略号）
+p,裏編み,purl（略号）
+k2tog,2目一度（表編み）,knit 2 together
+p2tog,2目一度（裏編み）,purl 2 together
+ssk,左上2目一度,slip slip knit
+yo,かけ目,yarn over
+sl,すべり目,slip stitch
+sl1,1目すべり目,slip 1 stitch
+psso,すべった目を2目一度に,pass slipped stitch over
+skpo,左上2目一度,slip knit pass over
+k1b,前段の目を表編み,knit into stitch below
+p1b,前段の目を裏編み,purl into stitch below
+kfb,1目から2目増し目（表）,knit front and back
+pfb,1目から2目増し目（裏）,purl front and back
+m1,1目増し目,make 1
+m1l,左増し目,make 1 left
+m1r,右増し目,make 1 right
+co,作り目,cast on
+bo,伏せ目,bind off
+cast on,作り目,
+bind off,伏せ目,
+cast off,伏せ目,イギリス英語
+sts,目,stitches（略号）
+st,目,stitch（略号）
+rnd,段（輪編み）,round（略号）
+rnds,段（輪編み複数）,rounds（略号）
+row,段（往復編み）,
+rows,段（往復編み複数）,
+rep,繰り返し,repeat（略号）
+pm,マーカーを付ける,place marker
+sm,マーカーを移す,slip marker
+rm,マーカーを外す,remove marker
+beg,始め,beginning（略号）
+end,終わり,
+RS,表側,right side
+WS,裏側,wrong side
+tbl,ねじり目,through back loop
+wyif,糸を手前に,with yarn in front
+wyib,糸を奥に,with yarn in back
+cn,なわあみ棒,cable needle
+C4F,4目の前交差,cable 4 front
+C4B,4目の後ろ交差,cable 4 back
+C6F,6目の前交差,cable 6 front
+C6B,6目の後ろ交差,cable 6 back
+LC,左交差,left cross
+RC,右交差,right cross
+dpn,4本針（輪針）,double pointed needles
+magic loop,マジックループ,輪編みの技法
+in the round,輪編み,
+flat,往復編み,
+gauge,ゲージ,
+swatch,ゲージスワッチ,
+needle size,針のサイズ,
+yarn weight,糸の太さ,
+worsted,並太,
+dk,中細,double knitting
+fingering,極細,
+bulky,極太,
+super bulky,超極太,
+lace weight,レース糸,
+chart,編み図,
+legend,凡例,
+pattern repeat,模様の繰り返し,
+stitch count,目数,
+total stitches,合計目数,
+increase,増し目,
+decrease,減らし目,
