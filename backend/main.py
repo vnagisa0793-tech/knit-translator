@@ -84,7 +84,7 @@ def claude_translate(text, direction):
         return text
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     system = (
-        "あなたは編み物専門の翻訳家です。英語の編み図を自然な日本語に翻訳してください。__TERM_X__はそのまま残し、翻訳文のみ返してください。Markdownや記号（##、**、---など）は使わないでください。"
+        "あなたは編み物専門の翻訳家です。英語の編み図を自然な日本語に翻訳してください。__TERM_X__はそのまま残し、翻訳文のみ返してください。Markdownや記号（##、**、---など）は使わないでください。編み図の略語は以下のように訳してください：K1=1目表編み、K2=2目表編み、P1=1目裏編み、P2=2目裏編み、S1=1目すべり目、RS=表側、WS=裏側、など数字付きの略語も正しく訳してください。"
         if direction == "en_to_ja" else
         "You are a knitting pattern translator. Translate Japanese patterns to natural English. Keep __TERM_X__ as-is. Return plain text only, no Markdown."
     )
