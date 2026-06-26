@@ -61,13 +61,23 @@ def restore_glossary(text, placeholders):
     return text
 
 def remove_markdown(text):
-    """Markdown記号を除去する"""
-    text = re.sub(r'''^\#{1,6}\s+''', '''''', text, flags=re.MULTILINE)
+    """Markdown記号を除去する（__TERM_X__プレースホルダーは保護）"""
+    # プレースホルダーを一時退避
+    placeholders_temp = {}
+    for i, m in enumerate(re.finditer(r'''__TERM_\d+__''', text)):
+        key = f"PLACEHOLDER_{i}_SAFE"
+        placeholders_temp[key] = m.group()
+    for key, val in placeholders_temp.items():
+        text = text.replace(val, key)
+    # Markdown除去
+    text = re.sub(r'''^#{1,6}\s+''', '''''', text, flags=re.MULTILINE)
     text = re.sub(r'''\*{1,2}(.+?)\*{1,2}''', r'''\1''', text)
-    text = re.sub(r'''_{1,2}(.+?)_{1,2}''', r'''\1''', text)
-    text = re.sub(r'''\|.+\|''', '''''', text, flags=re.MULTILINE)
+    text = re.sub(r'''(?<![A-Z])_{1,2}(?![A-Z])(.+?)(?<![A-Z])_{1,2}(?![A-Z])''', r'''\1''', text)
     text = re.sub(r'''^---+$''', '''''', text, flags=re.MULTILINE)
     text = re.sub(r'''\n{3,}''', '''\n\n''', text)
+    # プレースホルダーを復元
+    for key, val in placeholders_temp.items():
+        text = text.replace(key, val)
     return text.strip()
 
 # ─── Claude API：テキスト翻訳 ───
