@@ -60,15 +60,25 @@ def restore_glossary(text, placeholders):
         text = text.replace(ph, jp)
     return text
 
+def remove_markdown(text):
+    """Markdown記号を除去する"""
+    text = re.sub(r'''^\#{1,6}\s+''', '''''', text, flags=re.MULTILINE)
+    text = re.sub(r'''\*{1,2}(.+?)\*{1,2}''', r'''\1''', text)
+    text = re.sub(r'''_{1,2}(.+?)_{1,2}''', r'''\1''', text)
+    text = re.sub(r'''\|.+\|''', '''''', text, flags=re.MULTILINE)
+    text = re.sub(r'''^---+$''', '''''', text, flags=re.MULTILINE)
+    text = re.sub(r'''\n{3,}''', '''\n\n''', text)
+    return text.strip()
+
 # ─── Claude API：テキスト翻訳 ───
 def claude_translate(text, direction):
     if not text.strip():
         return text
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     system = (
-        "あなたは編み物専門の翻訳家です。英語の編み図を自然な日本語に翻訳してください。__TERM_X__はそのまま残し、翻訳文のみ返してください。"
+        "あなたは編み物専門の翻訳家です。英語の編み図を自然な日本語に翻訳してください。__TERM_X__はそのまま残し、翻訳文のみ返してください。Markdownや記号（##、**、---など）は使わないでください。"
         if direction == "en_to_ja" else
-        "You are a knitting pattern translator. Translate Japanese patterns to natural English. Keep __TERM_X__ as-is. Return translation only."
+        "You are a knitting pattern translator. Translate Japanese patterns to natural English. Keep __TERM_X__ as-is. Return plain text only, no Markdown symbols like ##, **, --- etc."
     )
     chunks = []
     if len(text) <= 3000:
@@ -91,7 +101,7 @@ def claude_translate(text, direction):
                 model="claude-sonnet-4-6", max_tokens=4000,
                 system=system, messages=[{"role":"user","content":chunk}]
             )
-            results.append(r.content[0].text)
+            results.append(remove_markdown(r.content[0].text))
         except Exception as e:
             log.error(f"翻訳エラー: {e}")
             results.append(chunk)
@@ -129,7 +139,7 @@ def claude_translate_image(img_path, direction):
                 ]
             }]
         )
-        return r.content[0].text
+        return remove_markdown(r.content[0].text)
     except Exception as e:
         log.error(f"画像翻訳エラー: {e}")
         return ""
