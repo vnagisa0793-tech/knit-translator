@@ -6,9 +6,9 @@ knit stitch,表編み,
 purl stitch,裏編み,
 k,表編み,knit（略号）
 p,裏編み,purl（略号）
-k2tog,2目一度（表編み）,knit 2 together
-p2tog,2目一度（裏編み）,purl 2 together
-ssk,左上2目一度,slip slip knit
+k2tog,左上2目一度,knit 2 together
+p2tog,左上2目一度（裏）,purl 2 together
+ssk,右上２目一度,slip slip knit
 yo,かけ目,yarn over
 sl,すべり目,slip stitch
 sl1,1目すべり目,slip 1 stitch
@@ -19,8 +19,8 @@ p1b,前段の目を裏編み,purl into stitch below
 kfb,1目から2目増し目（表）,knit front and back
 pfb,1目から2目増し目（裏）,purl front and back
 m1,1目増し目,make 1
-m1l,左増し目,make 1 left
-m1r,右増し目,make 1 right
+m1l,左ねじり増し目,make 1 left
+m1r,右ねじり増し目,make 1 right
 co,作り目,cast on
 bo,伏せ目,bind off
 cast on,作り目,
