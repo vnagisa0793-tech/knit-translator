@@ -122,7 +122,7 @@ export default function Home() {
             編み図PDF翻訳
           </p>
           <p style={{ margin: 0, fontSize: 13, color: COLORS.subText }}>
-            海外の編み図を翻訳したい！自分の編み図を海外の人にも！英語↔日本語の翻訳サービス
+            海外の編み図もらくらく読める！英語↔日本語の翻訳サービス
           </p>
 
           {/* 毛糸バー（色は上のCOLORSで変えられます） */}
@@ -132,6 +132,43 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* 使い方 */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+          marginBottom: 16,
+        }}>
+          {[
+            { num: '1', text: '方向を選ぶ' },
+            { num: '2', text: 'PDFをアップロード' },
+            { num: '3', text: '翻訳してダウンロード' },
+          ].map(({ num, text }) => (
+            <div key={num} style={{
+              background: 'white',
+              border: `1px solid ${COLORS.primaryBorder}`,
+              borderRadius: 14,
+              padding: '12px 8px',
+              textAlign: 'center',
+            }}>
+              <div style={{
+                width: 24, height: 24,
+                background: COLORS.primary,
+                color: 'white',
+                borderRadius: '50%',
+                fontSize: 12,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 8px',
+              }}>{num}</div>
+              <p style={{ fontSize: 11, color: COLORS.subText, margin: 0, lineHeight: 1.4 }}>{text}</p>
+            </div>
+          ))}
+        </div>
+
 
         {/* 翻訳方向 */}
         <div style={{
@@ -246,7 +283,7 @@ export default function Home() {
               transition: 'opacity 0.15s',
             }}
           >
-            {status === 'uploading' ? '翻訳中... しばらくお待ちください ⏳' : '🧶 翻訳する'}
+            {status === 'uploading' ? '翻訳中... 5分ほどかかる場合があります ⏳' : '🧶 翻訳する'}
           </button>
         </div>
 
@@ -308,7 +345,7 @@ export default function Home() {
             対応している専門用語（例）
           </span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {['k2tog（2目一度）', 'yo（かけ目）', 'ssk（左上2目一度）', 'cast on（作り目）', 'bind off（伏せ目）', 'm1（増し目）', 'short rows（引き返し編み）'].map(tag => (
+            {['k2tog（左上2目一度）', 'yo（かけ目）', 'ssk（右上2目一度）', 'cast on（作り目）', 'bind off（伏せ目）', 'm1l（左ねじり増し目）', 'short rows（引き返し編み）'].map(tag => (
               <span key={tag} style={{
                 background: COLORS.primaryLight,
                 border: `1px solid ${COLORS.primaryBorder}`,
@@ -321,41 +358,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 使い方 */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8,
-          marginBottom: 16,
-        }}>
-          {[
-            { num: '1', text: '方向を選ぶ' },
-            { num: '2', text: 'PDFをアップロード' },
-            { num: '3', text: '翻訳してダウンロード' },
-          ].map(({ num, text }) => (
-            <div key={num} style={{
-              background: 'white',
-              border: `1px solid ${COLORS.primaryBorder}`,
-              borderRadius: 14,
-              padding: '12px 8px',
-              textAlign: 'center',
-            }}>
-              <div style={{
-                width: 24, height: 24,
-                background: COLORS.primary,
-                color: 'white',
-                borderRadius: '50%',
-                fontSize: 12,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 8px',
-              }}>{num}</div>
-              <p style={{ fontSize: 11, color: COLORS.subText, margin: 0, lineHeight: 1.4 }}>{text}</p>
-            </div>
-          ))}
-        </div>
 
         {/* 広告スペース下 */}
         <div style={{
@@ -385,10 +387,12 @@ export default function Home() {
           </p>
           <p style={{ fontSize: 12, color: COLORS.subText, margin: '0 0 14px', lineHeight: 1.6 }}>
             「この翻訳がおかしかった」「この用語を追加してほしい」など<br />
-            お気軽にメールでお知らせください！
+            お気軽にお知らせください！
           </p>
           <a
-            href="mailto:vnagisa0793@gmail.com?subject=編み図PDF翻訳へのご意見&body=【ご意見の種類】翻訳の品質 / 用語の追加・修正（どちらか残してください）%0D%0A%0D%0A【内容】%0D%0A"
+            href="https://tally.so/r/Zjgo5o"
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               display: 'inline-block',
               background: COLORS.primaryLight,
@@ -401,7 +405,7 @@ export default function Home() {
               textDecoration: 'none',
             }}
           >
-            ✉️ メールを送る
+            📝 ご意見を送る
           </a>
         </div>
       </div>
