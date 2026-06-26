@@ -141,7 +141,7 @@ export default function Home() {
           marginBottom: 16,
         }}>
           {[
-            { num: '1', text: '方向を選ぶ' },
+            { num: '1', text: '翻訳の方向を選ぶ' },
             { num: '2', text: 'PDFをアップロード' },
             { num: '3', text: '翻訳してダウンロード' },
           ].map(({ num, text }) => (
