@@ -6,9 +6,9 @@ knit stitch,表編み,
 purl stitch,裏編み,
 k,表編み,knit（略号）
 p,裏編み,purl（略号）
-k2tog,左上2目一度,knit 2 together
-p2tog,左上2目一度（裏）,purl 2 together
-ssk,右上２目一度,slip slip knit
+k2tog,2目一度（表編み）,knit 2 together
+p2tog,2目一度（裏編み）,purl 2 together
+ssk,左上2目一度,slip slip knit
 yo,かけ目,yarn over
 sl,すべり目,slip stitch
 sl1,1目すべり目,slip 1 stitch
@@ -19,8 +19,8 @@ p1b,前段の目を裏編み,purl into stitch below
 kfb,1目から2目増し目（表）,knit front and back
 pfb,1目から2目増し目（裏）,purl front and back
 m1,1目増し目,make 1
-m1l,左ねじり増し目,make 1 left
-m1r,右ねじり増し目,make 1 right
+m1l,左増し目,make 1 left
+m1r,右増し目,make 1 right
 co,作り目,cast on
 bo,伏せ目,bind off
 cast on,作り目,
@@ -28,10 +28,10 @@ bind off,伏せ目,
 cast off,伏せ目,イギリス英語
 sts,目,stitches（略号）
 st,目,stitch（略号）
-rnd,段,round（略号）
-rnds,段,rounds（略号）
-row,段,
-rows,段,
+rnd,段（輪編み）,round（略号）
+rnds,段（輪編み複数）,rounds（略号）
+row,段（往復編み）,
+rows,段（往復編み複数）,
 rep,繰り返し,repeat（略号）
 pm,マーカーを付ける,place marker
 sm,マーカーを移す,slip marker
@@ -71,3 +71,112 @@ stitch count,目数,
 total stitches,合計目数,
 increase,増し目,
 decrease,減らし目,
+sc,細編み,single crochet
+dc,長編み,double crochet
+hdc,中長編み,half double crochet
+tr,長々編み,treble crochet
+dtr,超長々編み,double treble crochet
+sl st,引き抜き編み,slip stitch crochet
+ch,鎖編み,chain
+ch sp,鎖編みのスペース,chain space
+magic ring,輪の作り目,magic ring / magic circle
+magic circle,輪の作り目,
+mc,輪の作り目,magic circle略
+inc,増し目,increase
+dec,減らし目,decrease
+sc2tog,細編み2目一度,single crochet 2 together
+dc2tog,長編み2目一度,double crochet 2 together
+hdc2tog,中長編み2目一度,half double crochet 2 together
+invdec,引き抜き減らし目,invisible decrease
+blo,裏山を拾って,back loop only
+flo,表山を拾って,front loop only
+bl,裏山,back loop
+fl,front loop,front loop
+sp,スペース,space
+ch-sp,鎖のスペース,chain space
+rnd,段,round（かぎ針）
+rnds,段,rounds（かぎ針）
+RS,表側,right side
+WS,裏側,wrong side
+turn,返す,
+join,つなぐ,
+fasten off,糸を切る,
+weave in ends,糸端を処理する,
+block,ブロッキングする,
+stitch marker,段数マーカー,
+pm,マーカーを付ける,place marker
+sm,マーカーを移す,slip marker
+rm,マーカーを外す,remove marker
+tc,長々々編み,triple crochet
+fpdc,表引き上げ長編み,front post double crochet
+bpdc,裏引き上げ長編み,back post double crochet
+fpsc,表引き上げ細編み,front post single crochet
+bpsc,裏引き上げ細編み,back post single crochet
+fptr,表引き上げ長々編み,front post treble crochet
+bptr,裏引き上げ長々編み,back post treble crochet
+shell,シェル編み,
+v-stitch,V字編み,
+puff stitch,パフステッチ,
+bobble,ボブル,
+popcorn,ポップコーン編み,
+cluster,クラスター,
+picot,ピコット,
+spike stitch,スパイクステッチ,
+crossed dc,交差長編み,
+dc cluster,長編みクラスター,
+3dc cluster,長編み3目クラスター,
+granny square,グラニースクエア,
+granny,グラニー,
+motif,モチーフ,
+join as you go,編みながらつなぐ,JAYG
+jayg,編みながらつなぐ,join as you go
+tapestry crochet,タペストリーかぎ針編み,
+amigurumi,あみぐるみ,
+in the round,輪編み,
+flat,往復編み,
+foundation chain,作り目の鎖,
+starting chain,作り目の鎖,
+turning chain,立ち上がりの鎖,
+t-ch,立ち上がりの鎖,turning chain
+standing stitch,立ちステッチ,
+invisible join,見えないつなぎ目,
+surface slip stitch,表面引き抜き編み,
+reverse sc,逆細編み,crab stitch
+crab stitch,逆細編み,
+tunisian simple stitch,チュニジアン細編み,tss
+tss,チュニジアン細編み,tunisian simple stitch
+tunisian,チュニジアン編み,
+linked dc,繋がり長編み,
+spike sc,スパイク細編み,
+star stitch,星形ステッチ,
+waffle stitch,ワッフルステッチ,
+linen stitch,リネンステッチ,
+moss stitch,苔編み,
+granite stitch,御影ステッチ,
+crocodile stitch,クロコダイルステッチ,
+overlay crochet,オーバーレイかぎ針編み,
+interlocking crochet,インターロッキングかぎ針編み,
+broomstick lace,ブルームスティックレース,
+hairpin lace,ヘアピンレース,
+hook,かぎ針,
+yarn over hook,かぎ針に糸をかける,yoh
+yoh,かぎ針に糸をかける,yarn over hook
+yo,かけ目,yarn over
+pull through,引き出す,
+insert hook,かぎ針を入れる,
+draw up a loop,ループを引き出す,
+pull up a loop,ループを引き上げる,
+gauge swatch,ゲージスワッチ,
+hook size,かぎ針のサイズ,
+mm,ミリ,millimeter
+stuffing,綿,
+safety eyes,安全目,
+wire frame,ワイヤーフレーム,
+stitch,目,
+sts,目,stitches
+rep,繰り返す,repeat
+approx,約,approximately
+beg,始め,beginning
+cont,続ける,continue
+rem,残り,remaining
+tog,一緒に,together
