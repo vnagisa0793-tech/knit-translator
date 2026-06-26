@@ -28,10 +28,10 @@ bind off,伏せ目,
 cast off,伏せ目,イギリス英語
 sts,目,stitches（略号）
 st,目,stitch（略号）
-rnd,段（輪編み）,round（略号）
-rnds,段（輪編み複数）,rounds（略号）
-row,段（往復編み）,
-rows,段（往復編み複数）,
+rnd,段,round（略号）
+rnds,段,rounds（略号）
+row,段,
+rows,段,
 rep,繰り返し,repeat（略号）
 pm,マーカーを付ける,place marker
 sm,マーカーを移す,slip marker

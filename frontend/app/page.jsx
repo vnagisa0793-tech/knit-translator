@@ -283,7 +283,7 @@ export default function Home() {
               transition: 'opacity 0.15s',
             }}
           >
-            {status === 'uploading' ? '翻訳中... しばらくお待ちください ⏳' : '🧶 翻訳する'}
+            {status === 'uploading' ? '翻訳中... 5分ほどかかることがあります ⏳' : '🧶 翻訳する'}
           </button>
         </div>
 
