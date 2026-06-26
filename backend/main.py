@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
-"""
-編み図PDF翻訳 Web API
-- FastAPI バックエンド
-- Claude API で英↔日翻訳
-- PDF アップロード → 翻訳済みPDF を返す
-"""
-
 import os
 import csv
 import re
 import shutil
 import tempfile
 import logging
+import subprocess
 from pathlib import Path
 
 import anthropic
 import pdfplumber
 from pdf2image import convert_from_path
-from PIL import Image
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.styles import ParagraphStyle
@@ -30,55 +23,63 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-# ─────────────────────────────────────────────
-# 設定
-# ─────────────────────────────────────────────
 GLOSSARY_CSV = Path(__file__).parent / "knitting_glossary.csv"
-
-# APIキーはサーバーの環境変数から取得
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-
-FONT_CANDIDATES = [
-    "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/noto-cjk/NotoSansCJKjp-Regular.otf",
-    "C:/Windows/Fonts/msgothic.ttc",
-    "C:/Windows/Fonts/meiryo.ttc",
-]
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────
-# FastAPI アプリ
-# ─────────────────────────────────────────────
 app = FastAPI(title="編み図PDF翻訳API")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ─── フォント登録（動的検索）───
+def find_japanese_font() -> str | None:
+    """システムから日本語フォントを動的に探す"""
+    # 固定パス候補
+    candidates = [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKjp-Regular.otf",
+        "/usr/share/fonts/noto-cjk/NotoSansCJKjp-Regular.otf",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
+        "C:/Windows/Fonts/msgothic.ttc",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            log.info(f"フォント発見（固定パス）: {p}")
+            return p
 
-# ─────────────────────────────────────────────
-# フォント登録
-# ─────────────────────────────────────────────
+    # fc-listで動的検索
+    try:
+        result = subprocess.run(
+            ["fc-list", ":lang=ja", "--format=%{file}\n"],
+            capture_output=True, text=True, timeout=10
+        )
+        for line in result.stdout.strip().split("\n"):
+            p = line.strip()
+            if p and os.path.exists(p):
+                log.info(f"フォント発見（fc-list）: {p}")
+                return p
+    except Exception as e:
+        log.warning(f"fc-list失敗: {e}")
+
+    log.warning("日本語フォントが見つかりません")
+    return None
+
 def register_font() -> str:
-    for path in FONT_CANDIDATES:
-        if os.path.exists(path):
-            try:
-                pdfmetrics.registerFont(TTFont("JapaneseFont", path))
-                return "JapaneseFont"
-            except Exception:
-                pass
+    font_path = find_japanese_font()
+    if font_path:
+        try:
+            pdfmetrics.registerFont(TTFont("JapaneseFont", font_path))
+            log.info(f"フォント登録成功: {font_path}")
+            return "JapaneseFont"
+        except Exception as e:
+            log.error(f"フォント登録失敗: {e}")
     return "Helvetica"
 
 FONT_NAME = register_font()
 
-# ─────────────────────────────────────────────
-# 用語辞書
-# ─────────────────────────────────────────────
+# ─── 用語辞書 ───
 def load_glossary() -> dict:
     glossary = {}
     if not GLOSSARY_CSV.exists():
@@ -94,7 +95,7 @@ def load_glossary() -> dict:
 
 GLOSSARY = load_glossary()
 
-def apply_glossary(text: str, glossary: dict) -> tuple:
+def apply_glossary(text, glossary):
     placeholders = {}
     idx = 0
     for term in sorted(glossary.keys(), key=len, reverse=True):
@@ -106,41 +107,29 @@ def apply_glossary(text: str, glossary: dict) -> tuple:
             idx += 1
     return text, placeholders
 
-def restore_glossary(text: str, placeholders: dict) -> str:
+def restore_glossary(text, placeholders):
     for ph, jp in placeholders.items():
         text = text.replace(ph, jp)
     return text
 
-# ─────────────────────────────────────────────
-# Claude API 翻訳
-# ─────────────────────────────────────────────
-def claude_translate(text: str, direction: str) -> str:
+# ─── Claude API翻訳 ───
+def claude_translate(text, direction):
     if not text.strip():
         return text
-
     if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=500, detail="APIキーが設定されていません")
+        raise Exception("APIキーが設定されていません")
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     if direction == "en_to_ja":
         system_prompt = """あなたは編み物（ニッティング・かぎ針編み）の専門翻訳家です。
 英語の編み図・パターンを自然な日本語に翻訳してください。
-
-ルール：
-- 編み物の専門用語は日本の編み物業界で使われる標準的な用語を使う
-- __TERM_X__ というプレースホルダーはそのまま残す
-- 数字・記号はそのまま保持する
-- 翻訳文のみを返し、説明や注釈は不要"""
+__TERM_X__ というプレースホルダーはそのまま残してください。
+数字・記号はそのまま保持し、翻訳文のみを返してください。"""
     else:
         system_prompt = """You are a professional knitting pattern translator.
 Translate Japanese knitting/crochet patterns into natural English.
-
-Rules:
-- Use standard English knitting terminology
-- __TERM_X__ placeholders should remain as-is
-- Keep numbers and symbols intact
-- Return only the translated text, no explanations"""
+Keep __TERM_X__ placeholders as-is. Return only the translated text."""
 
     max_chars = 3000
     if len(text) <= max_chars:
@@ -171,28 +160,24 @@ Rules:
             )
             results.append(response.content[0].text)
         except Exception as e:
-            log.error(f"Claude API エラー: {e}")
+            log.error(f"Claude APIエラー: {e}")
             results.append(chunk)
-
     return "\n".join(results)
 
-# ─────────────────────────────────────────────
-# PDF 処理
-# ─────────────────────────────────────────────
-def translate_pdf(input_path: Path, output_path: Path, direction: str):
+# ─── PDF処理 ───
+def translate_pdf(input_path, output_path, direction):
     glossary = GLOSSARY if direction == "en_to_ja" else {}
 
     with pdfplumber.open(str(input_path)) as pdf:
         page_count = len(pdf.pages)
-
         try:
             page_images = convert_from_path(str(input_path), dpi=150)
-        except Exception:
+        except Exception as e:
+            log.warning(f"ページ画像取得失敗: {e}")
             page_images = []
 
         doc = SimpleDocTemplate(
-            str(output_path),
-            pagesize=A4,
+            str(output_path), pagesize=A4,
             rightMargin=15*mm, leftMargin=15*mm,
             topMargin=15*mm, bottomMargin=15*mm,
         )
@@ -215,13 +200,11 @@ def translate_pdf(input_path: Path, output_path: Path, direction: str):
                 if has_images and page_images and page_num < len(page_images):
                     img_path = tmp_dir / f"page_{page_num}.png"
                     page_images[page_num].save(str(img_path), "PNG")
-
                     page_w_mm = float(page.width) / 72 * 25.4
                     page_h_mm = float(page.height) / 72 * 25.4
                     avail_w = 180
                     scale = avail_w / page_w_mm
                     img_h_mm = page_h_mm * scale
-
                     story.append(RLImage(str(img_path), width=avail_w*mm, height=img_h_mm*mm))
 
                     if raw_text.strip():
@@ -254,20 +237,18 @@ def translate_pdf(input_path: Path, output_path: Path, direction: str):
                     story.append(PageBreak())
 
             doc.build(story)
-
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
-# ─────────────────────────────────────────────
-# エンドポイント
-# ─────────────────────────────────────────────
+# ─── エンドポイント ───
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "編み図PDF翻訳API"}
+    return {"status": "ok", "font": FONT_NAME}
 
 @app.get("/health")
 def health():
-    return {"status": "healthy"}
+    font_path = find_japanese_font()
+    return {"status": "healthy", "font_name": FONT_NAME, "font_path": font_path}
 
 @app.post("/translate")
 async def translate(
@@ -277,7 +258,7 @@ async def translate(
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="PDFファイルのみ対応しています")
     if direction not in ("en_to_ja", "ja_to_en"):
-        raise HTTPException(status_code=400, detail="directionはen_to_jaまたはja_to_enを指定してください")
+        raise HTTPException(status_code=400, detail="方向が正しくありません")
 
     tmp_dir = Path(tempfile.mkdtemp())
     try:
@@ -297,7 +278,6 @@ async def translate(
             media_type="application/pdf",
             background=None,
         )
-
     except anthropic.AuthenticationError:
         raise HTTPException(status_code=401, detail="APIキーが無効です")
     except Exception as e:
