@@ -5,8 +5,7 @@ import { useState } from 'react'
 export default function Home() {
   const [file, setFile] = useState(null)
   const [direction, setDirection] = useState('en_to_ja')
-  const [apiKey, setApiKey] = useState('')
-  const [status, setStatus] = useState('idle') // idle | uploading | done | error
+  const [status, setStatus] = useState('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [downloadUrl, setDownloadUrl] = useState('')
   const [downloadName, setDownloadName] = useState('')
@@ -15,7 +14,7 @@ export default function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!file || !apiKey) return
+    if (!file) return
 
     setStatus('uploading')
     setErrorMsg('')
@@ -25,7 +24,6 @@ export default function Home() {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('direction', direction)
-      formData.append('api_key', apiKey)
 
       const res = await fetch(`${API_URL}/translate`, {
         method: 'POST',
@@ -53,7 +51,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-stone-50">
-      {/* ヘッダー */}
       <header className="bg-white border-b border-stone-200 py-4 px-6">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <span className="text-3xl">🧶</span>
@@ -66,16 +63,13 @@ export default function Home() {
 
       <div className="max-w-2xl mx-auto px-6 py-10">
 
-        {/* 広告スペース（AdSense設置場所） */}
         <div className="bg-stone-100 border border-stone-200 rounded-lg p-4 mb-8 text-center text-stone-400 text-sm">
           広告スペース（Google AdSense）
         </div>
 
-        {/* メインフォーム */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* 翻訳方向 */}
             <div>
               <label className="block text-sm font-semibold text-stone-700 mb-3">
                 翻訳の方向
@@ -106,7 +100,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* PDFアップロード */}
             <div>
               <label className="block text-sm font-semibold text-stone-700 mb-2">
                 編み図PDF
@@ -142,31 +135,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* APIキー */}
-            <div>
-              <label className="block text-sm font-semibold text-stone-700 mb-2">
-                Anthropic APIキー
-              </label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-                className="w-full border border-stone-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
-              />
-              <p className="text-xs text-stone-400 mt-1">
-                APIキーはサーバーに保存されません。
-                <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer"
-                   className="text-rose-500 underline ml-1">取得はこちら</a>
-              </p>
-            </div>
-
-            {/* 送信ボタン */}
             <button
               type="submit"
-              disabled={!file || !apiKey || status === 'uploading'}
+              disabled={!file || status === 'uploading'}
               className={`w-full py-4 rounded-xl font-semibold text-white transition-all ${
-                !file || !apiKey || status === 'uploading'
+                !file || status === 'uploading'
                   ? 'bg-stone-300 cursor-not-allowed'
                   : 'bg-rose-500 hover:bg-rose-600 active:scale-95'
               }`}
@@ -183,14 +156,12 @@ export default function Home() {
             </button>
           </form>
 
-          {/* エラー */}
           {status === 'error' && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
               ❌ {errorMsg}
             </div>
           )}
 
-          {/* 完了・ダウンロード */}
           {status === 'done' && downloadUrl && (
             <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-xl text-center">
               <p className="text-2xl mb-2">✅</p>
@@ -206,21 +177,18 @@ export default function Home() {
           )}
         </div>
 
-        {/* 使い方説明 */}
         <div className="mt-8 bg-white rounded-2xl border border-stone-200 p-6">
           <h2 className="font-bold text-stone-700 mb-4">使い方</h2>
           <ol className="space-y-2 text-sm text-stone-600">
             <li className="flex gap-3"><span className="text-rose-400 font-bold">1.</span> 翻訳の方向を選ぶ（英→日 または 日→英）</li>
             <li className="flex gap-3"><span className="text-rose-400 font-bold">2.</span> 編み図PDFをアップロード</li>
-            <li className="flex gap-3"><span className="text-rose-400 font-bold">3.</span> Anthropic APIキーを入力</li>
-            <li className="flex gap-3"><span className="text-rose-400 font-bold">4.</span> 「翻訳する」ボタンを押してダウンロード</li>
+            <li className="flex gap-3"><span className="text-rose-400 font-bold">3.</span> 「翻訳する」ボタンを押してダウンロード</li>
           </ol>
           <div className="mt-4 p-3 bg-amber-50 rounded-lg text-xs text-amber-700">
             💡 k2tog・yo・ssk など編み物の専門用語に対応しています
           </div>
         </div>
 
-        {/* 広告スペース2 */}
         <div className="bg-stone-100 border border-stone-200 rounded-lg p-4 mt-8 text-center text-stone-400 text-sm">
           広告スペース（Google AdSense）
         </div>

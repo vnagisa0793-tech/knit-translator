@@ -35,6 +35,9 @@ from fastapi.middleware.cors import CORSMiddleware
 # ─────────────────────────────────────────────
 GLOSSARY_CSV = Path(__file__).parent / "knitting_glossary.csv"
 
+# APIキーはサーバーの環境変数から取得
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
 FONT_CANDIDATES = [
     "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
@@ -53,7 +56,7 @@ app = FastAPI(title="編み図PDF翻訳API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 本番では自分のドメインに絞る
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -91,7 +94,7 @@ def load_glossary() -> dict:
 
 GLOSSARY = load_glossary()
 
-def apply_glossary(text: str, glossary: dict) -> tuple[str, dict]:
+def apply_glossary(text: str, glossary: dict) -> tuple:
     placeholders = {}
     idx = 0
     for term in sorted(glossary.keys(), key=len, reverse=True):
@@ -111,15 +114,14 @@ def restore_glossary(text: str, placeholders: dict) -> str:
 # ─────────────────────────────────────────────
 # Claude API 翻訳
 # ─────────────────────────────────────────────
-def claude_translate(text: str, direction: str, api_key: str) -> str:
-    """
-    Claude API で翻訳
-    direction: "en_to_ja" or "ja_to_en"
-    """
+def claude_translate(text: str, direction: str) -> str:
     if not text.strip():
         return text
 
-    client = anthropic.Anthropic(api_key=api_key)
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=500, detail="APIキーが設定されていません")
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     if direction == "en_to_ja":
         system_prompt = """あなたは編み物（ニッティング・かぎ針編み）の専門翻訳家です。
@@ -127,7 +129,7 @@ def claude_translate(text: str, direction: str, api_key: str) -> str:
 
 ルール：
 - 編み物の専門用語は日本の編み物業界で使われる標準的な用語を使う
-- 略語（k, p, yo など）はすでに日本語に変換済みなので、__TERM_X__ はそのまま残す
+- __TERM_X__ というプレースホルダーはそのまま残す
 - 数字・記号はそのまま保持する
 - 翻訳文のみを返し、説明や注釈は不要"""
     else:
@@ -140,7 +142,6 @@ Rules:
 - Keep numbers and symbols intact
 - Return only the translated text, no explanations"""
 
-    # 長いテキストはチャンク分割
     max_chars = 3000
     if len(text) <= max_chars:
         chunks = [text]
@@ -171,19 +172,14 @@ Rules:
             results.append(response.content[0].text)
         except Exception as e:
             log.error(f"Claude API エラー: {e}")
-            results.append(chunk)  # エラー時は元テキスト
+            results.append(chunk)
 
     return "\n".join(results)
 
 # ─────────────────────────────────────────────
 # PDF 処理
 # ─────────────────────────────────────────────
-def translate_pdf(
-    input_path: Path,
-    output_path: Path,
-    direction: str,
-    api_key: str,
-):
+def translate_pdf(input_path: Path, output_path: Path, direction: str):
     glossary = GLOSSARY if direction == "en_to_ja" else {}
 
     with pdfplumber.open(str(input_path)) as pdf:
@@ -217,7 +213,6 @@ def translate_pdf(
                 has_images = bool(page.images)
 
                 if has_images and page_images and page_num < len(page_images):
-                    # ページ画像を保持
                     img_path = tmp_dir / f"page_{page_num}.png"
                     page_images[page_num].save(str(img_path), "PNG")
 
@@ -233,7 +228,7 @@ def translate_pdf(
                         story.append(Spacer(1, 4*mm))
                         story.append(Paragraph("【翻訳テキスト】", style_caption))
                         preprocessed, placeholders = apply_glossary(raw_text, glossary)
-                        translated = claude_translate(preprocessed, direction, api_key)
+                        translated = claude_translate(preprocessed, direction)
                         final = restore_glossary(translated, placeholders)
                         for para in final.split("\n"):
                             para = para.strip()
@@ -243,7 +238,7 @@ def translate_pdf(
                 else:
                     if raw_text.strip():
                         preprocessed, placeholders = apply_glossary(raw_text, glossary)
-                        translated = claude_translate(preprocessed, direction, api_key)
+                        translated = claude_translate(preprocessed, direction)
                         final = restore_glossary(translated, placeholders)
                         for para in final.split("\n"):
                             para = para.strip()
@@ -277,32 +272,25 @@ def health():
 @app.post("/translate")
 async def translate(
     file: UploadFile = File(...),
-    direction: str = Form("en_to_ja"),  # "en_to_ja" or "ja_to_en"
-    api_key: str = Form(...),
+    direction: str = Form("en_to_ja"),
 ):
-    # バリデーション
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="PDFファイルのみ対応しています")
     if direction not in ("en_to_ja", "ja_to_en"):
         raise HTTPException(status_code=400, detail="directionはen_to_jaまたはja_to_enを指定してください")
-    if not api_key.startswith("sk-ant-"):
-        raise HTTPException(status_code=400, detail="APIキーが正しくありません")
 
     tmp_dir = Path(tempfile.mkdtemp())
     try:
-        # アップロードファイルを保存
         input_path = tmp_dir / "input.pdf"
         with open(input_path, "wb") as f:
             f.write(await file.read())
 
-        # 翻訳
         suffix = "JA" if direction == "en_to_ja" else "EN"
         output_filename = f"{Path(file.filename).stem}_{suffix}.pdf"
         output_path = tmp_dir / output_filename
 
-        translate_pdf(input_path, output_path, direction, api_key)
+        translate_pdf(input_path, output_path, direction)
 
-        # レスポンス（ファイルを返す）
         return FileResponse(
             path=str(output_path),
             filename=output_filename,
@@ -315,4 +303,3 @@ async def translate(
     except Exception as e:
         log.error(f"翻訳エラー: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"翻訳中にエラーが発生しました: {str(e)}")
-    # tmp_dirはFileResponseが返った後に残るが、本番はS3などに切り替え推奨
