@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, csv, re, shutil, tempfile, logging
+import os, csv, re, shutil, tempfile, logging, base64
 from pathlib import Path
 
 import anthropic
@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# ─── 日本語フォント（ReportLab内蔵CIDフォント）───
+# ─── 日本語フォント ───
 FONT_NAME = "HeiseiKakuGo-W5"
 pdfmetrics.registerFont(UnicodeCIDFont(FONT_NAME))
 log.info(f"フォント登録: {FONT_NAME}")
@@ -60,7 +60,7 @@ def restore_glossary(text, placeholders):
         text = text.replace(ph, jp)
     return text
 
-# ─── Claude翻訳 ───
+# ─── Claude API：テキスト翻訳 ───
 def claude_translate(text, direction):
     if not text.strip():
         return text
@@ -97,6 +97,43 @@ def claude_translate(text, direction):
             results.append(chunk)
     return "\n".join(results)
 
+# ─── Claude API：画像ページの翻訳（画像を直接渡す）───
+def claude_translate_image(img_path, direction):
+    """ページ画像をClaudeに直接渡してOCR+翻訳を同時に行う"""
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+    with open(img_path, "rb") as f:
+        img_data = base64.standard_b64encode(f.read()).decode("utf-8")
+
+    if direction == "en_to_ja":
+        prompt = "この編み図ページの英語テキストをすべて読み取り、自然な日本語に翻訳してください。編み物の専門用語は正確に訳し、翻訳文のみ返してください。画像や図の説明は不要です。"
+    else:
+        prompt = "Read all Japanese text from this knitting pattern page and translate it to natural English. Use standard knitting terminology. Return only the translation."
+
+    try:
+        r = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": img_data,
+                        }
+                    },
+                    {"type": "text", "text": prompt}
+                ]
+            }]
+        )
+        return r.content[0].text
+    except Exception as e:
+        log.error(f"画像翻訳エラー: {e}")
+        return ""
+
 # ─── PDF処理 ───
 def translate_pdf(input_path, output_path, direction):
     glossary = GLOSSARY if direction == "en_to_ja" else {}
@@ -104,7 +141,8 @@ def translate_pdf(input_path, output_path, direction):
         page_count = len(pdf.pages)
         try:
             page_images = convert_from_path(str(input_path), dpi=150)
-        except:
+        except Exception as e:
+            log.warning(f"ページ画像取得失敗: {e}")
             page_images = []
 
         doc = SimpleDocTemplate(str(output_path), pagesize=A4,
@@ -123,22 +161,38 @@ def translate_pdf(input_path, output_path, direction):
                 has_img = bool(page.images)
 
                 if has_img and page_images and i < len(page_images):
+                    # ページ画像を保存
                     img_path = tmp_dir / f"p{i}.png"
                     page_images[i].save(str(img_path), "PNG")
+
+                    # ページ画像をそのまま出力
                     w_mm = float(page.width)/72*25.4
                     h_mm = float(page.height)/72*25.4
                     scale = 180/w_mm
                     story.append(RLImage(str(img_path), width=180*mm, height=h_mm*scale*mm))
-                    if raw.strip():
-                        story.append(Spacer(1, 4*mm))
-                        story.append(Paragraph("【翻訳テキスト】", sC))
-                        pre, ph = apply_glossary(raw, glossary)
-                        trans = claude_translate(pre, direction)
-                        final = restore_glossary(trans, ph)
-                        for p in final.split("\n"):
+
+                    # Claude APIで画像を直接読み取って翻訳
+                    story.append(Spacer(1, 4*mm))
+                    story.append(Paragraph("【翻訳テキスト】", sC))
+                    log.info(f"ページ{i+1}: 画像をClaudeで直接翻訳")
+                    translated = claude_translate_image(str(img_path), direction)
+                    if translated:
+                        for p in translated.split("\n"):
                             p = p.strip()
                             if p:
-                                story.append(Paragraph(p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"), sS))
+                                safe = p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+                                story.append(Paragraph(safe, sS))
+                    else:
+                        # フォールバック：テキスト抽出で翻訳
+                        if raw.strip():
+                            pre, ph = apply_glossary(raw, glossary)
+                            trans = claude_translate(pre, direction)
+                            final = restore_glossary(trans, ph)
+                            for p in final.split("\n"):
+                                p = p.strip()
+                                if p:
+                                    safe = p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+                                    story.append(Paragraph(safe, sS))
                 else:
                     if raw.strip():
                         pre, ph = apply_glossary(raw, glossary)
