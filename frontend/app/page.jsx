@@ -133,6 +133,43 @@ export default function Home() {
           </div>
         </div>
 
+        {/* 使い方 */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+          marginBottom: 16,
+        }}>
+          {[
+            { num: '1', text: '方向を選ぶ' },
+            { num: '2', text: 'PDFをアップロード' },
+            { num: '3', text: '翻訳してダウンロード' },
+          ].map(({ num, text }) => (
+            <div key={num} style={{
+              background: 'white',
+              border: `1px solid ${COLORS.primaryBorder}`,
+              borderRadius: 14,
+              padding: '12px 8px',
+              textAlign: 'center',
+            }}>
+              <div style={{
+                width: 24, height: 24,
+                background: COLORS.primary,
+                color: 'white',
+                borderRadius: '50%',
+                fontSize: 12,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 8px',
+              }}>{num}</div>
+              <p style={{ fontSize: 11, color: COLORS.subText, margin: 0, lineHeight: 1.4 }}>{text}</p>
+            </div>
+          ))}
+        </div>
+
+
         {/* 翻訳方向 */}
         <div style={{
           background: 'white',
@@ -321,41 +358,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 使い方 */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8,
-          marginBottom: 16,
-        }}>
-          {[
-            { num: '1', text: '方向を選ぶ' },
-            { num: '2', text: 'PDFをアップロード' },
-            { num: '3', text: '翻訳してダウンロード' },
-          ].map(({ num, text }) => (
-            <div key={num} style={{
-              background: 'white',
-              border: `1px solid ${COLORS.primaryBorder}`,
-              borderRadius: 14,
-              padding: '12px 8px',
-              textAlign: 'center',
-            }}>
-              <div style={{
-                width: 24, height: 24,
-                background: COLORS.primary,
-                color: 'white',
-                borderRadius: '50%',
-                fontSize: 12,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 8px',
-              }}>{num}</div>
-              <p style={{ fontSize: 11, color: COLORS.subText, margin: 0, lineHeight: 1.4 }}>{text}</p>
-            </div>
-          ))}
-        </div>
 
         {/* 広告スペース下 */}
         <div style={{
