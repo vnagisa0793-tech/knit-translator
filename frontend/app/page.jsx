@@ -308,7 +308,7 @@ export default function Home() {
             対応している専門用語（例）
           </span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {['k2tog（2目一度）', 'yo（かけ目）', 'ssk（左上2目一度）', 'cast on（作り目）', 'bind off（伏せ目）', 'm1（増し目）', 'short rows（引き返し編み）'].map(tag => (
+            {['k2tog（左上2目一度）', 'yo（かけ目）', 'ssk（右上2目一度）', 'cast on（作り目）', 'bind off（伏せ目）', 'm1（増し目）', 'short rows（引き返し編み）'].map(tag => (
               <span key={tag} style={{
                 background: COLORS.primaryLight,
                 border: `1px solid ${COLORS.primaryBorder}`,
