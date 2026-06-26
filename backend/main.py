@@ -28,7 +28,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 # ─── 日本語フォント ───
 FONT_NAME = "HeiseiKakuGo-W5"
 pdfmetrics.registerFont(UnicodeCIDFont(FONT_NAME))
-log.info(f"フォント登録: {FONT_NAME}")
 
 # ─── 用語辞書 ───
 def load_glossary():
@@ -61,26 +60,25 @@ def restore_glossary(text, placeholders):
     return text
 
 def remove_markdown(text):
-    """Markdown記号を除去する（__TERM_X__プレースホルダーは保護）"""
+    """Markdown記号を除去（プレースホルダーは保護）"""
     # プレースホルダーを一時退避
-    placeholders_temp = {}
-    for i, m in enumerate(re.finditer(r'''__TERM_\d+__''', text)):
-        key = f"PLACEHOLDER_{i}_SAFE"
-        placeholders_temp[key] = m.group()
-    for key, val in placeholders_temp.items():
+    saved = {}
+    for i, m in enumerate(re.finditer(r'__TERM_\d+__', text)):
+        key = f"SAFE_{i}_SAFE"
+        saved[key] = m.group()
+    for key, val in saved.items():
         text = text.replace(val, key)
     # Markdown除去
-    text = re.sub(r'''^#{1,6}\s+''', '''''', text, flags=re.MULTILINE)
-    text = re.sub(r'''\*{1,2}(.+?)\*{1,2}''', r'''\1''', text)
-    text = re.sub(r'''(?<![A-Z])_{1,2}(?![A-Z])(.+?)(?<![A-Z])_{1,2}(?![A-Z])''', r'''\1''', text)
-    text = re.sub(r'''^---+$''', '''''', text, flags=re.MULTILINE)
-    text = re.sub(r'''\n{3,}''', '''\n\n''', text)
-    # プレースホルダーを復元
-    for key, val in placeholders_temp.items():
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\*{1,2}(.+?)\*{1,2}', r'\1', text)
+    text = re.sub(r'^---+$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    # プレースホルダー復元
+    for key, val in saved.items():
         text = text.replace(key, val)
     return text.strip()
 
-# ─── Claude API：テキスト翻訳 ───
+# ─── Claude翻訳（テキスト）───
 def claude_translate(text, direction):
     if not text.strip():
         return text
@@ -88,7 +86,7 @@ def claude_translate(text, direction):
     system = (
         "あなたは編み物専門の翻訳家です。英語の編み図を自然な日本語に翻訳してください。__TERM_X__はそのまま残し、翻訳文のみ返してください。Markdownや記号（##、**、---など）は使わないでください。"
         if direction == "en_to_ja" else
-        "You are a knitting pattern translator. Translate Japanese patterns to natural English. Keep __TERM_X__ as-is. Return plain text only, no Markdown symbols like ##, **, --- etc."
+        "You are a knitting pattern translator. Translate Japanese patterns to natural English. Keep __TERM_X__ as-is. Return plain text only, no Markdown."
     )
     chunks = []
     if len(text) <= 3000:
@@ -117,37 +115,24 @@ def claude_translate(text, direction):
             results.append(chunk)
     return "\n".join(results)
 
-# ─── Claude API：画像ページの翻訳（画像を直接渡す）───
+# ─── Claude翻訳（画像）───
 def claude_translate_image(img_path, direction):
-    """ページ画像をClaudeに直接渡してOCR+翻訳を同時に行う"""
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
     with open(img_path, "rb") as f:
         img_data = base64.standard_b64encode(f.read()).decode("utf-8")
 
-    if direction == "en_to_ja":
-        prompt = "この編み図ページの英語テキストをすべて読み取り、自然な日本語に翻訳してください。編み物の専門用語は正確に訳し、翻訳文のみ返してください。画像や図の説明は不要です。"
-    else:
-        prompt = "Read all Japanese text from this knitting pattern page and translate it to natural English. Use standard knitting terminology. Return only the translation."
-
+    prompt = (
+        "この編み図ページの英語テキストをすべて読み取り、自然な日本語に翻訳してください。編み物の専門用語は正確に訳し、Markdownや記号（##、**など）は使わず、翻訳文のみ返してください。"
+        if direction == "en_to_ja" else
+        "Read all Japanese text from this knitting pattern page and translate it to natural English. Use standard knitting terminology. Return plain text only, no Markdown."
+    )
     try:
         r = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4000,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/png",
-                            "data": img_data,
-                        }
-                    },
-                    {"type": "text", "text": prompt}
-                ]
-            }]
+            model="claude-sonnet-4-6", max_tokens=4000,
+            messages=[{"role":"user","content":[
+                {"type":"image","source":{"type":"base64","media_type":"image/png","data":img_data}},
+                {"type":"text","text":prompt}
+            ]}]
         )
         return remove_markdown(r.content[0].text)
     except Exception as e:
@@ -157,6 +142,7 @@ def claude_translate_image(img_path, direction):
 # ─── PDF処理 ───
 def translate_pdf(input_path, output_path, direction):
     glossary = GLOSSARY if direction == "en_to_ja" else {}
+
     with pdfplumber.open(str(input_path)) as pdf:
         page_count = len(pdf.pages)
         try:
@@ -169,63 +155,55 @@ def translate_pdf(input_path, output_path, direction):
             rightMargin=15*mm, leftMargin=15*mm, topMargin=15*mm, bottomMargin=15*mm)
 
         sN = ParagraphStyle("N", fontName=FONT_NAME, fontSize=10, leading=16, spaceAfter=6)
-        sH = ParagraphStyle("H", fontName=FONT_NAME, fontSize=13, leading=20, spaceBefore=10, spaceAfter=6)
-        sC = ParagraphStyle("C", fontName=FONT_NAME, fontSize=9, leading=13, alignment=TA_CENTER, spaceAfter=6)
-        sS = ParagraphStyle("S", fontName=FONT_NAME, fontSize=8, leading=12, spaceAfter=4)
+        sC = ParagraphStyle("C", fontName=FONT_NAME, fontSize=9, leading=13,
+                            alignment=TA_CENTER, textColor=(0.5,0.5,0.5), spaceAfter=8)
 
         story = []
         tmp_dir = Path(tempfile.mkdtemp())
+
         try:
             for i, page in enumerate(pdf.pages):
                 raw = page.extract_text() or ""
                 has_img = bool(page.images)
 
-                if has_img and page_images and i < len(page_images):
-                    # ページ画像を保存
+                # ① 元ページを画像としてそのまま出力
+                if page_images and i < len(page_images):
                     img_path = tmp_dir / f"p{i}.png"
                     page_images[i].save(str(img_path), "PNG")
-
-                    # ページ画像をそのまま出力
-                    w_mm = float(page.width)/72*25.4
-                    h_mm = float(page.height)/72*25.4
-                    scale = 180/w_mm
+                    w_mm = float(page.width) / 72 * 25.4
+                    h_mm = float(page.height) / 72 * 25.4
+                    scale = 180 / w_mm
                     story.append(RLImage(str(img_path), width=180*mm, height=h_mm*scale*mm))
+                    story.append(PageBreak())
 
-                    # Claude APIで画像を直接読み取って翻訳
-                    story.append(Spacer(1, 4*mm))
-                    story.append(Paragraph("【翻訳テキスト】", sC))
-                    log.info(f"ページ{i+1}: 画像をClaudeで直接翻訳")
+                # ② 翻訳テキストを次ページに出力
+                story.append(Paragraph(f"【翻訳】{i+1}ページ目", sC))
+                story.append(Spacer(1, 4*mm))
+
+                # 画像ページはClaudeが画像を直接読んで翻訳
+                if has_img and page_images and i < len(page_images):
                     translated = claude_translate_image(str(img_path), direction)
-                    if translated:
-                        for p in translated.split("\n"):
-                            p = p.strip()
-                            if p:
-                                safe = p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-                                story.append(Paragraph(safe, sS))
-                    else:
-                        # フォールバック：テキスト抽出で翻訳
-                        if raw.strip():
-                            pre, ph = apply_glossary(raw, glossary)
-                            trans = claude_translate(pre, direction)
-                            final = restore_glossary(trans, ph)
-                            for p in final.split("\n"):
-                                p = p.strip()
-                                if p:
-                                    safe = p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-                                    story.append(Paragraph(safe, sS))
+                    text_to_show = translated
                 else:
+                    # テキストページはpdfplumberで抽出して翻訳
                     if raw.strip():
                         pre, ph = apply_glossary(raw, glossary)
                         trans = claude_translate(pre, direction)
-                        final = restore_glossary(trans, ph)
-                        for p in final.split("\n"):
-                            p = p.strip()
-                            if not p: continue
-                            safe = p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-                            story.append(Paragraph(safe, sH if (len(p)<60 and p.isupper()) else sN))
+                        text_to_show = restore_glossary(trans, ph)
+                    else:
+                        text_to_show = ""
 
-                if i < page_count-1:
+                # テキストを段落として出力
+                for p in text_to_show.split("\n"):
+                    p = p.strip()
+                    if p:
+                        safe = p.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+                        story.append(Paragraph(safe, sN))
+
+                # 最終ページ以外はページ区切り
+                if i < page_count - 1:
                     story.append(PageBreak())
+
             doc.build(story)
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
