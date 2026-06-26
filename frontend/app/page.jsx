@@ -122,7 +122,7 @@ export default function Home() {
             編み図PDF翻訳
           </p>
           <p style={{ margin: 0, fontSize: 13, color: COLORS.subText }}>
-            海外の編み図もらくらく読める！英語↔日本語の翻訳サービス
+            海外の編み図を翻訳したい！海外の人に編み図を公開したい！英語↔日本語の翻訳サービス
           </p>
 
           {/* 毛糸バー（色は上のCOLORSで変えられます） */}
