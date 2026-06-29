@@ -81,7 +81,6 @@ export default function Home() {
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.primaryText }}>編み図PDF翻訳</h1>
             <p style={{ margin: 0, fontSize: 12, color: COLORS.subText }}>英語 ↔ 日本語 ｜ 編み物専門用語に対応</p>
           </div>
-        <a href="/privacy" className="hover:text-amber-600">プライバシーポリシー</a>
         </div>
       </header>
 
@@ -414,6 +413,7 @@ export default function Home() {
       {/* フッター */}
       <footer style={{ textAlign: 'center', fontSize: 11, color: COLORS.hintText, paddingBottom: 24, marginTop: 16 }}>
         編み図PDF翻訳 ｜ Powered by Claude AI 🧶
+        <a href="/privacy" className="hover:text-amber-600">プライバシーポリシー</a>
       </footer>
     </main>
   )
