@@ -13,6 +13,9 @@ export const metadata = {
     locale: 'ja_JP',
     type: 'website',
   },
+  other: {
+    'google-adsense-account': 'ca-pub-7170961537823994',
+  },
 }
 
 export default function RootLayout({ children }) {
