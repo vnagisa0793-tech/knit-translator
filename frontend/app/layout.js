@@ -1,4 +1,5 @@
 import './globals.css'
+import Script from 'next/script'
 
 export const metadata = {
   title: '編み図PDF翻訳 | 英語の編み図を日本語に｜海外ニットパターン対応',
@@ -17,6 +18,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ja">
+      <head>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7170961537823994"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
       <body>{children}</body>
     </html>
   )

@@ -412,6 +412,7 @@ export default function Home() {
 
       {/* フッター */}
       <footer style={{ textAlign: 'center', fontSize: 11, color: COLORS.hintText, paddingBottom: 24, marginTop: 16 }}>
+        <a href="/privacy" className="hover:text-amber-600">プライバシーポリシー</a>
         編み図PDF翻訳 ｜ Powered by Claude AI 🧶
       </footer>
     </main>
